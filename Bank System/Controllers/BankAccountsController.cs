@@ -36,21 +36,21 @@ namespace Bank_System.Controllers
 		public async Task<IActionResult> Deposit(DepositCommand command)
 		{
 			await _mediator.Send(command);
-			return NoContent();
+			return Ok("Deposit Done Succsessfully");
 		}
 
 		[HttpPost("withdraw")]
 		public async Task<IActionResult> Withdraw(WithdrawCommand command)
 		{
 			await _mediator.Send(command);
-			return NoContent();
+			return Ok("Withdraw Done Succsessfully");
 		}
 
 		[HttpPost("transfer")]
 		public async Task<IActionResult> Transfer(TransferCommand command)
 		{
 			await _mediator.Send(command);
-			return NoContent();
+			return Ok("Transfer Done Succsessfully");
 		}
 	}
 }

@@ -9,7 +9,7 @@ namespace Bank.Domain.Entities
 {
 	public class CheckingAccount : BankAccount
 	{
-		public decimal OverdraftLimit { get; private set; } = 500;
+		public decimal OverdraftLimit { get; set; } = 500;
 
 		public CheckingAccount()
 		{

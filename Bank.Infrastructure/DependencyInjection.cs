@@ -36,6 +36,7 @@ namespace Bank.Infrastructure
 			services.AddScoped<IUserRepository, UserRepository>();
 			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 			services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+			services.AddScoped<IAccountTypeService, AccountTypeService>();
 
 			// 🔐 Auth Service
 			services.AddScoped<IAuthService, AuthService>();

@@ -1,4 +1,5 @@
 ﻿using Bank.Domain.Entities;
+using Bank.Domain.Entities.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ namespace Bank.Infrastructure.Persistence
 		public DbSet<RefreshToken> RefreshTokens { get; set; }
 		public DbSet<BankAccount> BankAccounts { get; set; }
 		public DbSet<Transaction> Transactions { get; set; }
+		public DbSet<AccountTypeConfig> AccountTypeConfigs { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
@@ -62,6 +64,29 @@ namespace Bank.Infrastructure.Persistence
 			.HasMany(u => u.BankAccounts)
 			.WithOne(ba => ba.Owner)
 			.HasForeignKey(ba => ba.OwnerId);
+
+
+
+			builder.Entity<AccountTypeConfig>().HasData(
+		new AccountTypeConfig
+		{
+			Id = 1,
+			Type = AccountType.Checking,
+			Name = "Checking Account",
+			Description = "Allows overdrafts up to $500",
+			OverdraftLimit = 500,
+			InterestRate = 0
+		},
+		new AccountTypeConfig
+		{
+			Id = 2,
+			Type = AccountType.Savings,
+			Name = "Savings Account",
+			Description = "Earns 2% interest, no overdrafts",
+			OverdraftLimit = 0,
+			InterestRate = 0.02m
+		}
+	);
 		}
 
 

@@ -14,5 +14,6 @@ namespace Bank.Domain.Interfaces
 		Task UpdateAsync(BankAccount account, CancellationToken ct);
 		Task DeleteAsync(BankAccount account, CancellationToken ct);
 		Task<int> SaveChangesAsync(CancellationToken ct = default);
+		Task<List<SavingsAccount>> GetAllSavingsBankAccounts();
 	}
 }

@@ -28,6 +28,13 @@ namespace Bank.Infrastructure.Repositories
 			return account;
 		}
 
+		public async Task<List<SavingsAccount>> GetAllSavingsBankAccounts()
+		{
+			return await _context.BankAccounts
+			.OfType<SavingsAccount>()
+			.ToListAsync();
+		}
+
 		public async Task AddAsync(BankAccount account, CancellationToken ct)
 			=> await _context.BankAccounts.AddAsync(account, ct);
 

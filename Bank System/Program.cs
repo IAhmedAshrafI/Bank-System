@@ -9,6 +9,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Bank.Infrastructure.Extensions;
 using Bank_System.MiddleWare;
+using Hangfire;
+using Hangfire.SqlServer;
+using Bank.Application.Features.Jobs;
+using StackExchange.Redis;
+using Bank.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -106,12 +111,40 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(options =>
+  ConnectionMultiplexer.Connect(("127.0.0.1:6379")));
+
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+	options.Configuration = "127.0.0.1:6379";
+	options.InstanceName = "BankAPI_";
+});
+
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+var connectionString = builder.Configuration.GetConnectionString("HangfireConnection");
+
+builder.Services.AddHangfire(config =>
+	config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+		  .UseSimpleAssemblyNameTypeSerializer()
+		  .UseDefaultTypeSerializer()
+		  .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+		  {
+			  CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+			  SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+			  QueuePollInterval = TimeSpan.Zero,
+			  UseRecommendedIsolationLevel = true,
+			  DisableGlobalLocks = true
+		  }));
+
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
 app.UseMiddleware<RateLimiterMiddleware>();
+//app.UseMiddleware<HttpHandlerMiddleware>();
 
 // === Middleware ===
 if (app.Environment.IsDevelopment())
@@ -126,12 +159,20 @@ using (var scope = app.Services.CreateScope())
 	await services.SeedRolesAsync();
 }
 
+
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.UseSerilogRequestLogging();
 
-try
+app.UseHangfireDashboard("/hangfire");
+
+RecurringJob.AddOrUpdate<ApplyInterestJob>(
+   "ApplyInterest",
+   service => service.ApplyInterestToSavingsAccounts(),
+   Cron.Minutely);
+
+	try
 {
 	Log.Information("Starting up {App} in {Env}", "Bank.Api", env);
 	app.Run();

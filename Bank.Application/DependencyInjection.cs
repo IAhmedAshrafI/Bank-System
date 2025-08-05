@@ -17,8 +17,6 @@ namespace Bank.Application
 			services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
 
-			services.AddAutoMapper(Assembly.GetExecutingAssembly());
-
 
 			return services;
 		}

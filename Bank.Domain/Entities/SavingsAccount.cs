@@ -9,7 +9,7 @@ namespace Bank.Domain.Entities
 {
 	public class SavingsAccount : BankAccount
 	{
-		public decimal InterestRate { get; private set; } = 0.02m;
+		public decimal InterestRate { get; set; } = 0.02m;
 
 		public SavingsAccount()
 		{
