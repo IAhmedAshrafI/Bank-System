@@ -52,5 +52,12 @@ namespace Bank_System.Controllers
 			await _mediator.Send(command);
 			return Ok("Transfer Done Succsessfully");
 		}
+
+		[HttpPatch("UpdateAccountTypeConfig")]
+		public async Task<IActionResult> Update(UpdateBankAccountConfigCommand command)
+		{
+			var result = await _mediator.Send(command);
+			return Ok(result);
+		}
 	}
 }

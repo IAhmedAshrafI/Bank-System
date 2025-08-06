@@ -51,6 +51,37 @@ namespace Bank.Infrastructure.Services
 
 			return config;
 		}
+
+		public async Task<AccountTypeConfig> UpdateConfigAsync(int Id, AccountTypeConfig accountType)
+		{
+			var checkAccount = await _context.AccountTypeConfigs
+				.FirstOrDefaultAsync(x => x.Id == Id);
+
+			if (checkAccount == null)
+			{
+				throw new KeyNotFoundException($"Account type config not found");
+			}
+
+			checkAccount.OverdraftLimit = accountType.OverdraftLimit;
+			checkAccount.InterestRate = accountType.InterestRate;
+			 _context.AccountTypeConfigs.Update(checkAccount);
+			 await _context.SaveChangesAsync();
+
+			if (await _cache.GetStringAsync($"accounttype:{checkAccount.Type}") != null)
+			{
+				await _cache.RemoveAsync($"accounttype:{checkAccount.Type}");
+			}
+
+			var cacheKey = $"accounttype:{checkAccount.Type}";
+			var options = new DistributedCacheEntryOptions()
+				.SetAbsoluteExpiration(TimeSpan.FromHours(24));
+			await _cache.SetStringAsync(
+				cacheKey,
+				JsonSerializer.Serialize(checkAccount),
+				options
+			);
+			return checkAccount;
+		}
 	}
 }
 

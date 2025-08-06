@@ -11,5 +11,6 @@ namespace Bank.Application.Interfaces
 	public interface IAccountTypeService
 	{
 		Task<AccountTypeConfig> GetConfigAsync(AccountType type, CancellationToken ct);
+		Task<AccountTypeConfig> UpdateConfigAsync(int Id, AccountTypeConfig accountType);
 	}
 }
