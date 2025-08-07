@@ -14,6 +14,8 @@ using Hangfire.SqlServer;
 using Bank.Application.Features.Jobs;
 using StackExchange.Redis;
 using Bank.Infrastructure.Services;
+using Bank.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +50,8 @@ Log.Logger = new LoggerConfiguration()
 	.CreateLogger();
 
 builder.Host.UseSerilog();
+
+builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -124,22 +128,22 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-var connectionString = builder.Configuration.GetConnectionString("HangfireConnection");
+//var connectionString = builder.Configuration.GetConnectionString("HangfireConnection");
 
-builder.Services.AddHangfire(config =>
-	config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
-		  .UseSimpleAssemblyNameTypeSerializer()
-		  .UseDefaultTypeSerializer()
-		  .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
-		  {
-			  CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-			  SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-			  QueuePollInterval = TimeSpan.Zero,
-			  UseRecommendedIsolationLevel = true,
-			  DisableGlobalLocks = true
-		  }));
+//builder.Services.AddHangfire(config =>
+//	config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+//		  .UseSimpleAssemblyNameTypeSerializer()
+//		  .UseDefaultTypeSerializer()
+//		  .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+//		  {
+//			  CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+//			  SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+//			  QueuePollInterval = TimeSpan.Zero,
+//			  UseRecommendedIsolationLevel = true,
+//			  DisableGlobalLocks = true
+//		  }));
 
-builder.Services.AddHangfireServer();
+//builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
@@ -152,37 +156,42 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
-
 using (var scope = app.Services.CreateScope())
 {
 	var services = scope.ServiceProvider;
-	await services.SeedRolesAsync();
+
+	var dbContext = services.GetRequiredService<ApplicationDbContext>(); // Use your actual DbContext
+	await dbContext.Database.MigrateAsync(); // Apply migrations and create DB
+
+	await services.SeedRolesAsync(); // Now safe to seed roles
 }
 
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.UseSerilogRequestLogging();
+app.Run();
 
-app.UseHangfireDashboard("/hangfire");
+//app.UseHangfireDashboard("/hangfire");
 
-RecurringJob.AddOrUpdate<ApplyInterestJob>(
-   "ApplyInterest",
-   service => service.ApplyInterestToSavingsAccounts(),
-   Cron.Minutely);
+//RecurringJob.AddOrUpdate<ApplyInterestJob>(
+//   "ApplyInterest",
+//   service => service.ApplyInterestToSavingsAccounts(),
+//   Cron.Minutely);
 
-	try
-{
-	Log.Information("Starting up {App} in {Env}", "Bank.Api", env);
-	app.Run();
-}
-catch (Exception ex)
-{
-	Log.Fatal(ex, "Application start-up failed");
-	throw;
-}
-finally
-{
-	Log.CloseAndFlush();
-}
+//	try
+//{
+//	Log.Information("Starting up {App} in {Env}", "Bank.Api", env);
+//	app.Run();
+//}
+//catch (Exception ex)
+//{
+//	Log.Fatal(ex, "Application start-up failed");
+//	throw;
+//}
+//finally
+//{
+//	Log.CloseAndFlush();
+//}
+

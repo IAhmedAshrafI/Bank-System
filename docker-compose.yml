@@ -1,0 +1,96 @@
+﻿version: "3.8"
+
+services:
+  # 🏦 Your .NET API + HangFire
+  api:
+    build:
+      context: .
+      dockerfile: Bank System/Dockerfile
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=BankSystem;User=sa;Password=SuperUser1010285;TrustServerCertificate=true;
+      - Jwt__Key=9cca68cb-f478-4eb0-8596-854bdce56f2b
+      - Jwt__Issuer=Bank-api
+      - Jwt__Audience=Bank-client
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - bank-network
+      - elastic
+
+  # 🗄️ SQL Server (for EF Core & HangFire)
+  sqlserver:
+      image: mcr.microsoft.com/mssql/server:2022-latest
+      environment:
+        - ACCEPT_EULA=Y
+        - SA_PASSWORD=SuperUser1010285
+        - MSSQL_PID=Express
+      ports:
+        - "1433:1433"
+      healthcheck:
+        test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/1433"]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+      networks:
+        - bank-network
+
+  # 🧠 Redis (for caching & HangFire)
+  redis:
+    image: redis:alpine
+    container_name: redisStudentAPI
+    ports:
+      - "6379:6379"
+    networks:
+      - bank-network
+      - elastic
+
+  # 🔍 Elasticsearch (for logging)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+    container_name: els
+    ports:
+      - "9200:9200"
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data  # ✅ Fixed
+    networks:
+      - elastic
+
+  # 📊 Kibana (for log visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.18.4
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=["http://elasticsearch:9200"]
+      - XPACK_SECURITY_ENABLED=false
+      - XPACK_FLEET_ENABLED=false
+      - XPACK_STREAMS_ENABLED=false
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=dev-encrypted-saved-objects-key-aaaaaaaaaaaaaaaaaaaaaa
+      - XPACK_SECURITY_ENCRYPTIONKEY=dev-security-session-key-bbbbbbbbbbbbbbbbbbbbbbbb
+      - XPACK_REPORTING_ENCRYPTIONKEY=dev-reporting-key-cccccccccccccccccccccccc
+    networks:
+      - elastic
+
+# Networks
+networks:
+  bank-network:
+    driver: bridge
+  elastic:
+    driver: bridge
+
+# Volumes
+volumes:
+  elasticsearch-data:  # ✅ Declared
