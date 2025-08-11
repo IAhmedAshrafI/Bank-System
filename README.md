@@ -52,7 +52,7 @@ docker compose up -d --build
 2) Service endpoints
 - API Swagger: http://localhost:5000/swagger
 - Transactions Log Service (OpenAPI doc): http://localhost:5002/openapi/v1.json
-- RabbitMQ UI: http://localhost:15672 (username: `bankuser`, password: `bankpass`)
+- RabbitMQ UI: http://localhost:15672 (username: `Your Username`, password: `Your Password`)
 - Elasticsearch: http://localhost:9200
 - Kibana: http://localhost:5601
 
