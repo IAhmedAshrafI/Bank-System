@@ -86,6 +86,7 @@ namespace Bank.Infrastructure.Services
 			var newAccessToken = await GenerateAccessToken(user);
 
 			return new AuthResponseDto(
+				Id: user.Id,
 				AccessToken: newAccessToken,
 				RefreshToken: refreshToken,
 				ExpiresAt: DateTime.UtcNow.AddMinutes(5)
@@ -158,6 +159,7 @@ namespace Bank.Infrastructure.Services
 			await _refreshTokenRepository.AddAsync(refreshToken, default);
 
 			return new AuthResponseDto(
+				Id: user.Id,
 				AccessToken: jwtToken,
 				RefreshToken: refreshToken.Token,
 				ExpiresAt: token.ValidTo

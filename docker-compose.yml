@@ -15,33 +15,91 @@ services:
       - Jwt__Key=9cca68cb-f478-4eb0-8596-854bdce56f2b
       - Jwt__Issuer=Bank-api
       - Jwt__Audience=Bank-client
+
+      # 🔗 RabbitMQ connection (use service DNS, not localhost)
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__VirtualHost=/
+      - RabbitMQ__UserName=bankuser
+      - RabbitMQ__Password=bankpass
+
+      # 🔗 Elasticsearch from container (not localhost)
+      - ElasticConfigration__Uri=http://elasticsearch:9200
     depends_on:
       sqlserver:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - bank-network
       - elastic
 
-  # 🗄️ SQL Server (for EF Core & HangFire)
-  sqlserver:
-      image: mcr.microsoft.com/mssql/server:2022-latest
-      environment:
-        - ACCEPT_EULA=Y
-        - SA_PASSWORD=SuperUser1010285
-        - MSSQL_PID=Express
-      ports:
-        - "1433:1433"
-      healthcheck:
-        test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/1433"]
-        interval: 10s
-        timeout: 5s
-        retries: 10
-      networks:
-        - bank-network
+  # 📝 Transaction Log Service (likely your consumer)
+  transaction-log-service:
+    build:
+      context: .
+      dockerfile: Bank.TransactionsLogService/Dockerfile
+    ports:
+      - "5002:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=TransactionLogDb;User=sa;Password=SuperUser1010285;TrustServerCertificate=true;
 
-  # 🧠 Redis (for caching & HangFire)
+      # 🔗 Same RabbitMQ settings
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__VirtualHost=/
+      - RabbitMQ__UserName=bankuser
+      - RabbitMQ__Password=bankpass
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bank-network
+      - elastic
+
+  # 🐇 RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: bankuser
+      RABBITMQ_DEFAULT_PASS: bankpass
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "15672:15672"  # Management UI
+      - "5672:5672"    # AMQP
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bank-network
+
+  # 🗄️ SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SuperUser1010285
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "echo > /dev/tcp/localhost/1433"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bank-network
+
+  # 🧠 Redis
   redis:
     image: redis:alpine
     container_name: redisStudentAPI
@@ -51,7 +109,7 @@ services:
       - bank-network
       - elastic
 
-  # 🔍 Elasticsearch (for logging)
+  # 🔍 Elasticsearch
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
     container_name: els
@@ -61,11 +119,11 @@ services:
       - xpack.security.enabled=false
       - discovery.type=single-node
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data  # ✅ Fixed
+      - elasticsearch-data:/usr/share/elasticsearch/data
     networks:
       - elastic
 
-  # 📊 Kibana (for log visualization)
+  # 📊 Kibana
   kibana:
     image: docker.elastic.co/kibana/kibana:8.18.4
     container_name: kibana
@@ -84,13 +142,11 @@ services:
     networks:
       - elastic
 
-# Networks
 networks:
   bank-network:
     driver: bridge
   elastic:
     driver: bridge
 
-# Volumes
 volumes:
-  elasticsearch-data:  # ✅ Declared
+  elasticsearch-data:

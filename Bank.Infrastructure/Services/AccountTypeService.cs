@@ -28,11 +28,11 @@ namespace Bank.Infrastructure.Services
 		{
 			var cacheKey = $"accounttype:{type}";
 
-			var cached = await _cache.GetStringAsync(cacheKey, ct);
-			if (!string.IsNullOrEmpty(cached))
-			{
-				return JsonSerializer.Deserialize<AccountTypeConfig>(cached)!;
-			}
+			//var cached = await _cache.GetStringAsync(cacheKey, ct);
+			//if (!string.IsNullOrEmpty(cached))
+			//{
+			//	return JsonSerializer.Deserialize<AccountTypeConfig>(cached)!;
+			//}
 
 			var config = await _context.AccountTypeConfigs
 				.FirstOrDefaultAsync(x => x.Type == type, ct);
@@ -40,14 +40,14 @@ namespace Bank.Infrastructure.Services
 			if (config == null)
 				throw new KeyNotFoundException($"Account type config for {type} not found");
 
-			var options = new DistributedCacheEntryOptions()
-				.SetAbsoluteExpiration(TimeSpan.FromHours(24));
+			//var options = new DistributedCacheEntryOptions()
+			//	.SetAbsoluteExpiration(TimeSpan.FromHours(24));
 
-			await _cache.SetStringAsync(
-				cacheKey,
-				JsonSerializer.Serialize(config),
-				options,
-				ct);
+			//await _cache.SetStringAsync(
+			//	cacheKey,
+			//	JsonSerializer.Serialize(config),
+			//	options,
+			//	ct);
 
 			return config;
 		}

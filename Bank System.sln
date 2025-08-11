@@ -18,6 +18,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Bank System\Dockerfile = Bank System\Dockerfile
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bank.Shared", "Bank.Shared\Bank.Shared.csproj", "{CF4E43A1-69BA-46B7-96DA-2E2400C4717A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bank.TransactionsLogService", "Bank.TransactionsLogService\Bank.TransactionsLogService.csproj", "{6BBF0335-C018-47F2-8F23-C23B214135EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +44,14 @@ Global
 		{E8F7E6B2-C07E-4D73-B4B5-6502EC3F3302}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8F7E6B2-C07E-4D73-B4B5-6502EC3F3302}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8F7E6B2-C07E-4D73-B4B5-6502EC3F3302}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF4E43A1-69BA-46B7-96DA-2E2400C4717A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF4E43A1-69BA-46B7-96DA-2E2400C4717A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF4E43A1-69BA-46B7-96DA-2E2400C4717A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF4E43A1-69BA-46B7-96DA-2E2400C4717A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BBF0335-C018-47F2-8F23-C23B214135EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BBF0335-C018-47F2-8F23-C23B214135EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BBF0335-C018-47F2-8F23-C23B214135EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BBF0335-C018-47F2-8F23-C23B214135EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
