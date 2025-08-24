@@ -63,6 +63,33 @@ services:
     networks:
       - bank-network
       - elastic
+ 
+  loan-approval-service:
+    build:
+      context: .
+      dockerfile: LoanApprovalService/Dockerfile
+    ports:
+      - "5003:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=LoanApprovalDb;User=sa;Password=SuperUser1010285;TrustServerCertificate=true;
+
+      # 🔗 Same RabbitMQ settings
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__VirtualHost=/
+      - RabbitMQ__UserName=bankuser
+      - RabbitMQ__Password=bankpass
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bank-network
+      - elastic
 
   # 🐇 RabbitMQ
   rabbitmq:

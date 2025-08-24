@@ -4,6 +4,7 @@ using Bank.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bank.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250820133031_AddLoanTableAndLoanPayment")]
+    partial class AddLoanTableAndLoanPayment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -189,8 +192,12 @@ namespace Bank.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("BankAccountId")
+                    b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountId1")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
@@ -221,7 +228,7 @@ namespace Bank.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BankAccountId");
+                    b.HasIndex("AccountId1");
 
                     b.ToTable("Loans");
                 });
@@ -482,13 +489,13 @@ namespace Bank.Infrastructure.Migrations
 
             modelBuilder.Entity("Bank.Domain.Entities.Loan", b =>
                 {
-                    b.HasOne("Bank.Domain.Entities.BankAccount", "BankAccount")
-                        .WithMany("Loans")
-                        .HasForeignKey("BankAccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("Bank.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId1")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("BankAccount");
+                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("Bank.Domain.Entities.LoanPayment", b =>
@@ -571,8 +578,6 @@ namespace Bank.Infrastructure.Migrations
 
             modelBuilder.Entity("Bank.Domain.Entities.BankAccount", b =>
                 {
-                    b.Navigation("Loans");
-
                     b.Navigation("Transactions");
                 });
 

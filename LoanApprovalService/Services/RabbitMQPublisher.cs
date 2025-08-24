@@ -1,11 +1,10 @@
-﻿using Bank.Application.Interfaces;
-using Bank.Shared.Events;
-using Microsoft.Extensions.Configuration;
-using RabbitMQ.Client;
+﻿using Bank.Shared.Events;
+using LoanApprovalService.Interfaces;
 using Newtonsoft.Json;
+using RabbitMQ.Client;
 using System.Text;
 
-namespace Bank.Infrastructure.Services
+namespace LoanApprovalService.Services
 {
 	public sealed class RabbitMQPublisher : IRabbitMQPublisher, IDisposable, IAsyncDisposable
 	{
@@ -21,36 +20,42 @@ namespace Bank.Infrastructure.Services
 				Password = cfg["RabbitMQ:Password"] ?? "guest",
 				VirtualHost = cfg["RabbitMQ:VirtualHost"] ?? "/",
 				Port = int.TryParse(cfg["RabbitMQ:Port"], out var p) ? p : AmqpTcpEndpoint.UseDefaultPort,
-				AutomaticRecoveryEnabled = true
+				AutomaticRecoveryEnabled = true,
+				NetworkRecoveryInterval = TimeSpan.FromSeconds(5),
+				RequestedConnectionTimeout = TimeSpan.FromSeconds(10)
 			};
 
 			_connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
 			_channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
 
-			// Ensure queues exist
-			_channel.QueueDeclareAsync(QueueNames.TransactionLog, true, false, false, null).GetAwaiter().GetResult();
-			_channel.QueueDeclareAsync(QueueNames.LoanApprovals, true, false, false, null).GetAwaiter().GetResult();
-			_channel.QueueDeclareAsync(QueueNames.LoanStatusUpdates, true, false, false, null).GetAwaiter().GetResult();
+			// Ensure the status-updates queue exists
+			_channel.QueueDeclareAsync(
+				queue: "loan-status-updates",
+				durable: true, exclusive: false, autoDelete: false, arguments: null
+			).GetAwaiter().GetResult();
 		}
 
 		public void Publish<T>(T @event) where T : class
 		{
-			var routingKey = @event switch
+			// Route by event type
+			var queue = @event switch
 			{
-				TransactionCreatedEvent => QueueNames.TransactionLog,
-				LoanRequestedEvent => QueueNames.LoanApprovals,
-				LoanApprovedEvent => QueueNames.LoanStatusUpdates, // NEW
-				LoanRejectedEvent => QueueNames.LoanStatusUpdates, // NEW
+				LoanApprovedEvent => "loan-status-updates",
+				LoanRejectedEvent => "loan-status-updates",
 				_ => throw new InvalidOperationException($"No queue mapping for {@event.GetType().Name}")
 			};
 
 			var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event));
 
+			_channel.QueueDeclareAsync(queue, true, false, false, null)
+					.GetAwaiter().GetResult(); // idempotent, but guarantees existence
+
 			_channel.BasicPublishAsync(
 				exchange: "",
-				routingKey: routingKey,
+				routingKey: queue,
 				mandatory: false,
-				body: body
+				body: body,
+				cancellationToken: CancellationToken.None
 			).GetAwaiter().GetResult();
 		}
 

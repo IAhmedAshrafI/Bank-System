@@ -36,6 +36,7 @@ namespace Bank.Infrastructure
 			services.AddScoped<IUserRepository, UserRepository>();
 			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 			services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+			services.AddScoped<ILoanRepository, LoanRepository>();
 			services.AddScoped<IAccountTypeService, AccountTypeService>();
 			services.AddSingleton<IRabbitMQPublisher, RabbitMQPublisher>();
 

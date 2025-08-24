@@ -6,15 +6,12 @@ using System.Threading.Tasks;
 
 namespace Bank.Domain.Entities.Enums
 {
-	public enum TransactionType
+	public enum LoanStatus
 	{
-		Deposit,
-		Withdrawal,
-		Transfer,
-		Interest,
-		LoanDisbursement,
-		LoanPayment,
-		LateFee,
-		LoanRejected
+		PendingApproval,
+		Approved,
+		Rejected,
+		Active,
+		Closed
 	}
 }

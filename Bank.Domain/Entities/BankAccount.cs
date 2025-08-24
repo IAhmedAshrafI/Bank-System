@@ -21,6 +21,7 @@ namespace Bank.Domain.Entities
 		// Navigation
 		public Account Owner { get; protected set; } = null!;
 		public ICollection<Transaction> Transactions { get; private set; } = new List<Transaction>();
+		public ICollection<Loan> Loans { get; private set; } = new List<Loan>();
 
 		public virtual void Deposit(decimal amount)
 		{

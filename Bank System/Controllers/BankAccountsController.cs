@@ -1,6 +1,10 @@
 ﻿using Bank.Application.Features.BankAccounts.BankAccountDtos;
 using Bank.Application.Features.BankAccounts.Commands;
 using Bank.Application.Features.BankAccounts.Queries;
+using Bank.Application.Features.Loans.Commands;
+using Bank.Application.Features.Loans.Dtos;
+using Bank.Application.Features.Loans.Queries;
+using Bank.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -57,6 +61,21 @@ namespace Bank_System.Controllers
 		public async Task<IActionResult> Update(UpdateBankAccountConfigCommand command)
 		{
 			var result = await _mediator.Send(command);
+			return Ok(result);
+		}
+
+		[HttpPost("CreateLoan")]
+		public async Task<IActionResult> CreateLoan(CreateLoanCommand command)
+		{
+			var result = await _mediator.Send(command);
+			return Ok(result);
+		}
+
+		[HttpGet("GetLoanById/{Id}")]
+		public async Task<ActionResult<LoanDto>> GetLoanById(Guid Id)
+		{
+			var query = new GetLoanById(Id);
+			var result = await _mediator.Send(query);
 			return Ok(result);
 		}
 	}

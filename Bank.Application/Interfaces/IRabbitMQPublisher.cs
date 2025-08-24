@@ -10,6 +10,6 @@ namespace Bank.Application.Interfaces
 {
 	public interface IRabbitMQPublisher
 	{
-		void Publish(TransactionCreatedEvent @event);
+		void Publish<T>(T @event) where T : class;
 	}
 }

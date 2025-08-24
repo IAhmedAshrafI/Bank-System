@@ -1,33 +1,34 @@
 ﻿using Bank.Shared.Events;
-using Bank.TransactionsLogService.Entities;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+using LoanApprovalService.Entities;
+using LoanApprovalService.Entities.Enums;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 
-namespace Bank.TransactionsLogService.Service
+namespace LoanApprovalService.Services
 {
-	public sealed class TransactionLogConsumerService : BackgroundService, IAsyncDisposable
+	public sealed class LoanRequestConsumerService : BackgroundService, IAsyncDisposable
 	{
 		private readonly IServiceProvider _services;
 		private readonly IConfiguration _cfg;
-		private readonly ILogger<TransactionLogConsumerService> _logger;
+		private readonly ILogger<LoanRequestConsumerService> _logger;
 
 		private IConnection? _connection;
 		private IChannel? _channel;
 		private string? _consumerTag;
 
-		public TransactionLogConsumerService(IServiceProvider services, IConfiguration cfg, ILogger<TransactionLogConsumerService> logger)
+		public LoanRequestConsumerService(IServiceProvider services, IConfiguration cfg, ILogger<LoanRequestConsumerService> logger)
 		{
 			_services = services;
 			_cfg = cfg;
 			_logger = logger;
 		}
 
-		public override async Task StartAsync(CancellationToken ct)
+		public override async Task StartAsync(CancellationToken stoppingToken)
 		{
 			var factory = new ConnectionFactory
 			{
@@ -40,21 +41,22 @@ namespace Bank.TransactionsLogService.Service
 			};
 
 			_connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
+
 			_channel = await _connection.CreateChannelAsync(new CreateChannelOptions(
 				publisherConfirmationsEnabled: false,
 				publisherConfirmationTrackingEnabled: false
-			), ct);
+			), stoppingToken);
 
-			// Ensure queue exists (same name the publisher uses)
+			// Ensure queue exists
 			await _channel.QueueDeclareAsync(
-				queue: QueueNames.TransactionLog,
+				queue: QueueNames.LoanApprovals,
 				durable: true, exclusive: false, autoDelete: false, arguments: null,
-				cancellationToken: ct
+				cancellationToken: stoppingToken
 			);
 
-			await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 10, global: false, cancellationToken: ct);
+			await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 10, global: false, cancellationToken: stoppingToken);
 
-			await base.StartAsync(ct);
+			await base.StartAsync(stoppingToken);
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -67,19 +69,20 @@ namespace Bank.TransactionsLogService.Service
 				try
 				{
 					var json = Encoding.UTF8.GetString(ea.Body.ToArray());
-					var @event = Newtonsoft.Json.JsonConvert.DeserializeObject<TransactionCreatedEvent>(json);
+					var @event = Newtonsoft.Json.JsonConvert.DeserializeObject<LoanRequestedEvent>(json);
 
 					using var scope = _services.CreateScope();
-					var db = scope.ServiceProvider.GetRequiredService<TransactionLogDbContext>();
+					var db = scope.ServiceProvider.GetRequiredService<LoanApprovalDbContext>();
 
-					db.TransactionLogs.Add(new TransactionLog
+					db.LoanApprovals.Add(new LoanApproval
 					{
-						Id = @event!.Id,
+						LoanId = @event!.LoanId,
 						AccountId = @event.AccountId,
 						Amount = @event.Amount,
-						Type = @event.Type,
-						Timestamp = @event.Timestamp,
-						SourceService = @event.SourceService
+						TermMonths = @event.TermMonths,
+						AnnualInterestRate = @event.AnnualInterestRate,
+						RequestedAt = @event.RequestedAt,
+						Status = LoanStatus.PendingApproval
 					});
 
 					await db.SaveChangesAsync(stoppingToken);
@@ -92,27 +95,22 @@ namespace Bank.TransactionsLogService.Service
 				}
 			};
 
-			// CONSUME FROM THE EXACT QUEUE WE DECLARED
+			// CONSUME FROM THE EXACT QUEUE WE DECLARED (matches publisher)
 			_consumerTag = await _channel.BasicConsumeAsync(
-				queue: QueueNames.TransactionLog,
+				queue: QueueNames.LoanApprovals,
 				autoAck: false,
 				consumerTag: string.Empty,
 				noLocal: false,
 				exclusive: false,
 				arguments: null,
 				consumer: consumer,
-				cancellationToken: stoppingToken);
+				cancellationToken: stoppingToken
+			);
 		}
 
 		public override async Task StopAsync(CancellationToken ct)
 		{
-			try
-			{
-				if (_channel != null && _consumerTag != null)
-					await _channel.BasicCancelAsync(_consumerTag, cancellationToken: ct);
-			}
-			catch { /* swallow */ }
-
+			try { if (_channel != null && _consumerTag != null) await _channel.BasicCancelAsync(_consumerTag, cancellationToken: ct); } catch { }
 			await base.StopAsync(ct);
 		}
 

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,6 +23,8 @@ namespace Bank.Infrastructure.Persistence
 		public DbSet<BankAccount> BankAccounts { get; set; }
 		public DbSet<Transaction> Transactions { get; set; }
 		public DbSet<AccountTypeConfig> AccountTypeConfigs { get; set; }
+		public DbSet<Loan> Loans { get; set; }
+		public DbSet<LoanPayment> LoanPayments { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
@@ -41,6 +44,15 @@ namespace Bank.Infrastructure.Persistence
 					  .WithMany(u => u.BankAccounts)
 					  .HasForeignKey(ba => ba.OwnerId);
 				entity.ToTable("BankAccounts");
+			});
+
+			builder.Entity<Loan>(b =>
+			{
+				b.HasOne(l => l.BankAccount)
+				 .WithMany(a => a.Loans)
+				 .HasForeignKey(l => l.BankAccountId)
+				 .IsRequired()
+				 .OnDelete(DeleteBehavior.Restrict);
 			});
 
 			builder.Entity<CheckingAccount>()
@@ -64,6 +76,17 @@ namespace Bank.Infrastructure.Persistence
 			.HasMany(u => u.BankAccounts)
 			.WithOne(ba => ba.Owner)
 			.HasForeignKey(ba => ba.OwnerId);
+
+			
+
+			builder.Entity<LoanPayment>(entity =>
+			{
+				entity.HasKey(p => p.Id);
+				entity.Property(p => p.Amount).HasColumnType("decimal(18,2)");
+				entity.Property(p => p.LateFee).HasColumnType("decimal(18,2)");
+			});
+
+			
 
 
 

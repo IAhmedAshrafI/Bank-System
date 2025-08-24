@@ -125,6 +125,8 @@ builder.Services.AddStackExchangeRedisCache(options =>
 	options.InstanceName = "BankAPI_";
 });
 
+builder.Services.AddHostedService<LoanStatusUpdateConsumerService>();
+
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
